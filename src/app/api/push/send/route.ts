@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: '구독된 크루원이 없어요' });
     }
 
-    const payload = JSON.stringify({ title: `[런크루] ${title}`, body, url, tag: tag || 'notice' });
+    const payload = JSON.stringify({ title: `[N.R] ${title}`, body, url, tag: tag || 'notice' });
 
     const results = await Promise.allSettled(
       subscriptions.map(({ subscription, memberName }) =>
