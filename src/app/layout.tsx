@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: '런크루 대시보드',
-  description: '런크루 공지 알림 관리 시스템',
+  title: 'NEW ROUND',
+  description: 'NEW ROUND 공지 알림 관리 시스템',
   manifest: '/manifest.json',
   themeColor: '#534AB7',
 };
