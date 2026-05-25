@@ -8,13 +8,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '구독 정보가 없어요' }, { status: 400 });
     }
 
-    // 기존 데이터 전부 삭제 후 새로 저장 (같은 기기 중복 방지)
-    const endpoint = subscription.endpoint;
-    await supabase
+    // 기존 구독 전체 조회 후 같은 endpoint 찾아서 삭제
+    const { data: existing } = await supabase
       .from('push_subscriptions')
-      .delete()
-      .eq('subscription->>endpoint', endpoint);
+      .select('id, subscription');
 
+    if (existing) {
+      const sameEndpoint = existing.filter((row: any) => 
+        row.subscription?.endpoint === subscription.endpoint
+      );
+      for (const row of sameEndpoint) {
+        await supabase.from('push_subscriptions').delete().eq('id', row.id);
+      }
+    }
+
+    // 새로 저장
     const { error } = await supabase
       .from('push_subscriptions')
       .insert({
@@ -31,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${memberName || memberId}님 알림 구독 완료`,
+      message: `${memberName}님 알림 구독 완료`,
       totalSubscribers: count
     });
   } catch (err) {
