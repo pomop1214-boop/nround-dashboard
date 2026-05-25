@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 
 const DEMO_MEMBER = { id: 'member-001', name: '운영진' };
+
+interface Notice {
+  id: number;
+  title: string;
+  body: string;
+  date: string;
+}
+
+const DEFAULT_NOTICES: Notice[] = [];
 
 export default function Dashboard() {
   const { permission, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotification(
@@ -19,11 +28,28 @@ export default function Dashboard() {
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
-  const [notices, setNotices] = useState([
-    { id: 1, title: '5/18 올림픽공원 러닝 안내', body: '오전 7시 평화의문 앞 집결, 10km 예정', date: '5월 17일' },
-    { id: 2, title: '6월 크루 티셔츠 공동구매', body: '사이즈 신청을 5/31까지 부탁드립니다', date: '5월 15일' },
-  ]);
+  const [notices, setNotices] = useState<Notice[]>([]);
   const [scheduled, setScheduled] = useState<{ id: number; title: string; body: string; datetime: string }[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  // 페이지 로드 시 localStorage에서 공지 불러오기
+  useEffect(() => {
+    const saved = localStorage.getItem('nround-notices');
+    if (saved) {
+      setNotices(JSON.parse(saved));
+    } else {
+      setNotices(DEFAULT_NOTICES);
+      localStorage.setItem('nround-notices', JSON.stringify(DEFAULT_NOTICES));
+    }
+    setMounted(true);
+  }, []);
+
+  // 공지 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('nround-notices', JSON.stringify(notices));
+    }
+  }, [notices, mounted]);
 
   const sendNotice = async () => {
     if (!title || !body) return;
@@ -49,7 +75,9 @@ export default function Dashboard() {
       const data = await res.json();
       setResult({ msg: data.message, ok: data.success });
       if (data.success) {
-        setNotices(prev => [{ id: Date.now(), title, body, date: '방금 전' }, ...prev]);
+        const now = new Date();
+        const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+        setNotices(prev => [{ id: Date.now(), title, body, date: dateStr }, ...prev]);
         setTitle(''); setBody('');
       }
     } catch {
@@ -71,6 +99,8 @@ export default function Dashboard() {
   const cancelSchedule = (id: number) => {
     setScheduled(prev => prev.filter(s => s.id !== id));
   };
+
+  if (!mounted) return null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8f7f4', fontFamily: 'Pretendard, -apple-system, sans-serif' }}>
@@ -168,9 +198,7 @@ export default function Dashboard() {
 
         {/* 공지 목록 */}
         <div style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e6e0', padding: '20px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: '#999', letterSpacing: '0.06em' }}>최근 공지 ({notices.length})</div>
-          </div>
+          <div style={{ fontSize: 11, fontWeight: 600, color: '#999', letterSpacing: '0.06em', marginBottom: 14 }}>최근 공지 ({notices.length})</div>
           {notices.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '24px 0', fontSize: 13, color: '#bbb' }}>공지가 없어요</div>
           ) : (
@@ -185,14 +213,8 @@ export default function Dashboard() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <div style={{ fontSize: 11, padding: '3px 8px', borderRadius: 10, background: '#EAF3DE', color: '#27500A', whiteSpace: 'nowrap' }}>발송 완료</div>
-                    <button
-                      onClick={() => deleteNotice(n.id)}
-                      style={{
-                        padding: '3px 8px', borderRadius: 6, border: `0.5px solid ${deleteConfirm === n.id ? '#F09595' : '#ddd'}`,
-                        background: deleteConfirm === n.id ? '#FCEBEB' : '#fff',
-                        color: deleteConfirm === n.id ? '#791F1F' : '#aaa',
-                        fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap'
-                      }}>
+                    <button onClick={() => deleteNotice(n.id)}
+                      style={{ padding: '3px 8px', borderRadius: 6, border: `0.5px solid ${deleteConfirm === n.id ? '#F09595' : '#ddd'}`, background: deleteConfirm === n.id ? '#FCEBEB' : '#fff', color: deleteConfirm === n.id ? '#791F1F' : '#aaa', fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                       {deleteConfirm === n.id ? '정말 삭제?' : '삭제'}
                     </button>
                     {deleteConfirm === n.id && (
