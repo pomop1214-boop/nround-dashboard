@@ -1,4 +1,4 @@
-// 런크루 서비스 워커 — 백그라운드 푸시 알림 수신
+// NEW ROUND 서비스 워커 — 백그라운드 푸시 알림 수신
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -29,7 +29,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || '[런크루] 새 공지', options)
+    self.registration.showNotification(data.title || '[NEW ROUND] 새 공지', options)
   );
 });
 
