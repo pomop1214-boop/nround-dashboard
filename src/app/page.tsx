@@ -43,6 +43,15 @@ export default function Dashboard() {
       setNotices(JSON.parse(saved));
     }
     setMounted(true);
+
+    // 서비스 워커에서 링크 열기 메시지 수신
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'OPEN_URL') {
+          window.open(event.data.url, '_blank');
+        }
+      });
+    }
   }, []);
 
   useEffect(() => {
