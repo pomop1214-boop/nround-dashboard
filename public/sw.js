@@ -18,10 +18,10 @@ self.addEventListener('push', (event) => {
     body: data.body || '',
     icon: '/icon-192.png',
     badge: '/icon-192.png',
-    tag: data.tag || 'runcrew-notice',
+    tag: data.tag || 'nround-notice',
     renotify: true,
     requireInteraction: false,
-    data: { url: data.url || '/notices' },
+    data: { url: 'https://open.kakao.com/o/gtedhmbg' },
     actions: [
       { action: 'view', title: '공지 확인하기' },
       { action: 'close', title: '닫기' }
@@ -39,17 +39,9 @@ self.addEventListener('notificationclick', (event) => {
 
   if (event.action === 'close') return;
 
-  const url = event.notification.data?.url || '/';
+  const url = event.notification.data?.url || 'https://open.kakao.com/o/gtedhmbg';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          client.navigate(url);
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) return clients.openWindow(url);
-    })
+    clients.openWindow(url)
   );
 });
