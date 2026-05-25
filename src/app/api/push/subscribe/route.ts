@@ -8,13 +8,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '구독 정보가 없어요' }, { status: 400 });
     }
 
+    // 기존 데이터 전부 삭제 후 새로 저장 (같은 기기 중복 방지)
+    const endpoint = subscription.endpoint;
+    await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('subscription->>endpoint', endpoint);
+
     const { error } = await supabase
       .from('push_subscriptions')
-      .upsert({
+      .insert({
         member_id: memberId,
         member_name: memberName || '크루원',
         subscription: subscription,
-      }, { onConflict: 'member_id' });
+      });
 
     if (error) throw error;
 
