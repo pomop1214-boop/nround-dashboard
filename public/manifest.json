@@ -1,6 +1,6 @@
 {
-  "name": "런크루 대시보드",
-  "short_name": "런크루",
+  "name": "NEW ROUND 대시보드",
+  "short_name": "NEW ROUND",
   "description": "런크루 공지 알림 관리 시스템",
   "start_url": "/",
   "display": "standalone",
