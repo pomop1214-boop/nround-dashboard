@@ -18,7 +18,7 @@ self.addEventListener('push', (event) => {
     tag: data.tag || 'nround-notice',
     renotify: true,
     requireInteraction: false,
-    data: { url: data.url || 'https://open.kakao.com/o/gtedhmbg' },
+    data: { url: 'https://open.kakao.com/o/gtedhmbg' },
     actions: [
       { action: 'view', title: '공지 확인하기' },
       { action: 'close', title: '닫기' }
@@ -36,16 +36,14 @@ self.addEventListener('notificationclick', (event) => {
   const kakaoUrl = 'https://open.kakao.com/o/gtedhmbg';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // 이미 열린 창이 있으면 거기서 열기
-      for (const client of clientList) {
-        if ('navigate' in client) {
-          client.navigate(kakaoUrl);
-          return client.focus();
+    clients.openWindow(kakaoUrl).catch(() => {
+      // openWindow 실패 시 모든 클라이언트에 메시지 전송
+      return clients.matchAll({ type: 'window' }).then((clientList) => {
+        if (clientList.length > 0) {
+          clientList[0].postMessage({ type: 'OPEN_URL', url: kakaoUrl });
+          return clientList[0].focus();
         }
-      }
-      // 없으면 새 창으로 열기
-      return clients.openWindow(kakaoUrl);
+      });
     })
   );
 });
