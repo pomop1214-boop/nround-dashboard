@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react';
 import { usePushNotification } from '@/hooks/usePushNotification';
 
-const DEMO_MEMBER = { id: 'member-001', name: '운영진' };
-
 interface Notice {
   id: number;
   title: string;
@@ -12,14 +10,11 @@ interface Notice {
   date: string;
 }
 
-const DEFAULT_NOTICES: Notice[] = [];
-
 export default function Dashboard() {
-  const { permission, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotification(
-    DEMO_MEMBER.id,
-    DEMO_MEMBER.name
-  );
-
+  const [memberName, setMemberName] = useState('');
+  const [memberId, setMemberId] = useState('member-001');
+  const [nameInput, setNameInput] = useState('');
+  const [showNameModal, setShowNameModal] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -32,24 +27,48 @@ export default function Dashboard() {
   const [scheduled, setScheduled] = useState<{ id: number; title: string; body: string; datetime: string }[]>([]);
   const [mounted, setMounted] = useState(false);
 
-  // 페이지 로드 시 localStorage에서 공지 불러오기
+  const { permission, isSubscribed, isLoading, subscribe, unsubscribe } = usePushNotification(
+    memberId,
+    memberName || '크루원'
+  );
+
   useEffect(() => {
+    const savedName = localStorage.getItem('nround-member-name');
+    const savedId = localStorage.getItem('nround-member-id');
+    if (savedName) setMemberName(savedName);
+    if (savedId) setMemberId(savedId);
+
     const saved = localStorage.getItem('nround-notices');
     if (saved) {
       setNotices(JSON.parse(saved));
-    } else {
-      setNotices(DEFAULT_NOTICES);
-      localStorage.setItem('nround-notices', JSON.stringify(DEFAULT_NOTICES));
     }
     setMounted(true);
   }, []);
 
-  // 공지 변경될 때마다 localStorage에 저장
   useEffect(() => {
     if (mounted) {
       localStorage.setItem('nround-notices', JSON.stringify(notices));
     }
   }, [notices, mounted]);
+
+  const handleSubscribeClick = () => {
+    if (isSubscribed) {
+      unsubscribe();
+    } else {
+      setShowNameModal(true);
+    }
+  };
+
+  const handleNameSubmit = () => {
+    if (!nameInput.trim()) return;
+    const id = `member-${Date.now()}`;
+    localStorage.setItem('nround-member-id', id);
+    localStorage.setItem('nround-member-name', nameInput.trim());
+    setMemberId(id);
+    setMemberName(nameInput.trim());
+    setShowNameModal(false);
+    setTimeout(() => subscribe(), 100);
+  };
 
   const sendNotice = async () => {
     if (!title || !body) return;
@@ -107,12 +126,40 @@ export default function Dashboard() {
       <header style={{ background: '#fff', borderBottom: '0.5px solid #e8e6e0', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 28, height: 28, borderRadius: 8, background: '#E8593C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🏃</div>
-          <span style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>N.ROUND 대시보드</span>
+          <span style={{ fontWeight: 600, fontSize: 15, color: '#1a1a1a' }}>NEW ROUND 대시보드</span>
         </div>
-        <div style={{ fontSize: 13, color: '#888' }}>운영진</div>
+        <div style={{ fontSize: 13, color: '#888' }}>{memberName || '운영진'}</div>
       </header>
 
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+        {/* 이름 입력 모달 */}
+        {showNameModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+            <div style={{ background: '#fff', borderRadius: 14, padding: '24px', width: '90%', maxWidth: 320 }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 6 }}>이름을 입력해주세요</div>
+              <div style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>알림을 받을 이름을 입력하세요</div>
+              <input
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleNameSubmit()}
+                placeholder="예: 홍길동"
+                autoFocus
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '0.5px solid #ddd', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: 12 }}
+              />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowNameModal(false)}
+                  style={{ flex: 1, padding: '10px', borderRadius: 8, border: '0.5px solid #ddd', background: '#fff', fontSize: 13, cursor: 'pointer', color: '#888' }}>
+                  취소
+                </button>
+                <button onClick={handleNameSubmit} disabled={!nameInput.trim()}
+                  style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#E8593C', color: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', opacity: !nameInput.trim() ? 0.5 : 1 }}>
+                  알림 허용하기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 알림 구독 */}
         <div style={{ background: '#fff', borderRadius: 12, border: '0.5px solid #e8e6e0', padding: '20px 24px' }}>
@@ -129,13 +176,13 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', marginBottom: 3 }}>
-                  {isSubscribed ? '✅ 푸시 알림 구독 중' : '푸시 알림 구독하기'}
+                  {isSubscribed ? `✅ ${memberName || '크루원'}님 구독 중` : '푸시 알림 구독하기'}
                 </div>
                 <div style={{ fontSize: 12, color: '#888' }}>
                   {isSubscribed ? '공지가 올라오면 이 기기로 알림이 와요' : '알림을 허용하면 공지를 바로 받을 수 있어요'}
                 </div>
               </div>
-              <button onClick={isSubscribed ? unsubscribe : subscribe} disabled={isLoading}
+              <button onClick={handleSubscribeClick} disabled={isLoading}
                 style={{ padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: 'none', background: isSubscribed ? '#f1efea' : '#E8593C', color: isSubscribed ? '#5f5e5a' : '#fff', opacity: isLoading ? 0.6 : 1 }}>
                 {isLoading ? '처리 중...' : isSubscribed ? '구독 해제' : '알림 허용하기'}
               </button>
