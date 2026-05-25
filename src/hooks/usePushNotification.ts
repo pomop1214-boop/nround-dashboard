@@ -1,5 +1,4 @@
 'use client';
-// hooks/usePushNotification.ts
 
 import { useState, useEffect } from 'react';
 
@@ -16,11 +15,8 @@ export function usePushNotification(memberId: string, memberName: string) {
       return;
     }
     setPermission(Notification.permission as PermissionState);
-
-    // 서비스 워커 등록
     navigator.serviceWorker.register('/sw.js').catch(console.error);
 
-    // 기존 구독 여부 확인
     navigator.serviceWorker.ready.then(async (reg) => {
       const sub = await reg.pushManager.getSubscription();
       setIsSubscribed(!!sub);
@@ -30,17 +26,17 @@ export function usePushNotification(memberId: string, memberName: string) {
   const subscribe = async () => {
     if (!('serviceWorker' in navigator)) return;
     setIsLoading(true);
-
     try {
       const permission = await Notification.requestPermission();
       setPermission(permission as PermissionState);
-
-      if (permission !== 'granted') {
-        setIsLoading(false);
-        return;
-      }
+      if (permission !== 'granted') { setIsLoading(false); return; }
 
       const reg = await navigator.serviceWorker.ready;
+
+      // 기존 구독 해제 후 새로 구독
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
@@ -80,11 +76,4 @@ export function usePushNotification(memberId: string, memberName: string) {
   };
 
   return { permission, isSubscribed, isLoading, subscribe, unsubscribe };
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
